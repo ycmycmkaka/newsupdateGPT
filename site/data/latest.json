@@ -1,0 +1,11 @@
+{
+  "generated_at_et": "Not generated yet",
+  "headline": "Your first automated update will appear after the GitHub Action runs.",
+  "summary": "This starter file is only a placeholder so the site can render before the first scheduled job runs.",
+  "sections": [
+    { "key": "us_markets", "title": "U.S. Stocks & Economy", "items": [] },
+    { "key": "global_economy", "title": "Global Economy", "items": [] },
+    { "key": "hong_kong", "title": "Hong Kong Economy", "items": [] },
+    { "key": "policy", "title": "Major Policy Updates", "items": [] }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "market-news-briefing-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node scripts/generate-news.mjs"
+  },
+  "dependencies": {
+    "openai": "^6.6.0"
+  }
+}

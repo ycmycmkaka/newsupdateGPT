@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Market Policy Briefing</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Auto-updated twice daily</p>
+          <h1>Daily Market Policy Briefing</h1>
+          <p class="subhead">
+            U.S. stocks, global economy, Hong Kong economy, and major policy updates.
+          </p>
+        </div>
+        <div class="meta-card">
+          <div>
+            <span class="meta-label">Last update</span>
+            <strong id="generatedAt">Loading…</strong>
+          </div>
+          <div>
+            <span class="meta-label">Timezone</span>
+            <strong>America/New_York</strong>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="card overview">
+          <h2 id="headline">Loading latest headline…</h2>
+          <p id="summary"></p>
+        </section>
+
+        <section id="sections" class="sections"></section>
+
+        <section class="card history-card">
+          <div class="section-header">
+            <h2>Recent updates</h2>
+          </div>
+          <div id="history"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="sectionTemplate">
+      <section class="card">
+        <div class="section-header">
+          <h2 class="section-title"></h2>
+        </div>
+        <div class="items"></div>
+      </section>
+    </template>
+
+    <template id="itemTemplate">
+      <article class="news-item">
+        <div class="item-topline">
+          <h3 class="item-title"></h3>
+          <span class="badge"></span>
+        </div>
+        <p class="item-summary"></p>
+        <p class="item-matters"></p>
+        <div class="sources"></div>
+      </article>
+    </template>
+
+    <template id="historyTemplate">
+      <article class="history-item">
+        <strong class="history-time"></strong>
+        <p class="history-headline"></p>
+        <p class="history-summary"></p>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
