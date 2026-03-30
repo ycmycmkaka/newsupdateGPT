@@ -30,10 +30,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Generate latest news briefing
+      - name: Generate latest briefing
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: node scripts/generate-news.mjs
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-2.5-flash
+        run: npm run generate
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
