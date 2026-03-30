@@ -103,23 +103,42 @@ Rules:
 - Importance must be an integer from 1 to 5.
 - If a section is quiet, include fewer items instead of filler.
 - Mention exact dates when timing matters.
-- Make sure links are direct and valid.`;
+- Make sure links are direct and valid.
+- Return strict JSON only.
+- Escape all quotation marks, newlines, and control characters correctly inside JSON strings.`;
 }
 
 function extractJson(text) {
-  const trimmed = String(text || '').trim();
+  const raw = String(text || '').trim();
 
-  try {
-    return JSON.parse(trimmed);
-  } catch {}
-
-  const firstBrace = trimmed.indexOf('{');
-  const lastBrace = trimmed.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+  if (!raw) {
+    throw new Error('Model returned empty text.');
   }
 
-  throw new Error('Model did not return valid JSON.');
+  let cleaned = raw
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {}
+
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+  }
+
+  cleaned = cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ');
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error('Failed JSON preview:', cleaned.slice(0, 2000));
+    throw error;
+  }
 }
 
 async function readJson(filePath, fallback) {
@@ -133,6 +152,7 @@ async function readJson(filePath, fallback) {
 
 function sanitizePayload(payload) {
   const sections = Array.isArray(payload.sections) ? payload.sections : [];
+
   return {
     generated_at_et: payload.generated_at_et ?? new Date().toISOString(),
     headline: String(payload.headline ?? 'Market briefing update'),
@@ -164,21 +184,42 @@ function sanitizePayload(payload) {
 }
 
 async function main() {
+  console.log('Starting news generation...');
+
   if (!process.env.GEMINI_API_KEY) {
     throw new Error('Missing GEMINI_API_KEY');
   }
 
+  console.log('GEMINI_API_KEY detected.');
+
   await fs.mkdir(DATA_DIR, { recursive: true });
 
-  const response = await ai.models.generateContent({
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
-    contents: buildPrompt(),
-    config: {
-      tools: [{ googleSearch: {} }],
-    },
-  });
+  console.log('Sending request to Gemini...');
 
-  const payload = sanitizePayload(extractJson(response.text || ''));
+  const response = await Promise.race([
+    ai.models.generateContent({
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      contents: buildPrompt(),
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: 'application/json',
+      },
+    }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini request timed out after 90 seconds')), 90000)
+    ),
+  ]);
+
+  console.log('Received response from Gemini.');
+
+  const responseText =
+    response?.text ||
+    response?.candidates?.[0]?.content?.parts
+      ?.map((part) => part?.text || '')
+      .join('') ||
+    '';
+
+  const payload = sanitizePayload(extractJson(responseText));
   const previousHistory = await readJson(HISTORY_PATH, []);
 
   const historyEntry = {
@@ -194,7 +235,10 @@ async function main() {
     })
     .slice(0, 30);
 
+  console.log('Writing latest.json...');
   await fs.writeFile(LATEST_PATH, JSON.stringify(payload, null, 2));
+
+  console.log('Writing history.json...');
   await fs.writeFile(HISTORY_PATH, JSON.stringify(nextHistory, null, 2));
 
   console.log(`Updated briefing: ${payload.generated_at_et}`);
