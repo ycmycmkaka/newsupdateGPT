@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 const ROOT = process.cwd();
 const SITE_DIR = path.join(ROOT, 'site');
@@ -44,7 +46,7 @@ Current Eastern Time date: ${etDate}
 Current Eastern Time time: ${etTime}
 Audience: investors and general readers who want a concise, practical update.
 
-Use web search to find the most relevant recent developments.
+Use Google Search grounding to find the most relevant recent developments.
 Focus ONLY on recent, material items that matter for:
 1. U.S. stock market and U.S. economy
 2. Global economy
@@ -105,7 +107,8 @@ Rules:
 }
 
 function extractJson(text) {
-  const trimmed = text.trim();
+  const trimmed = String(text || '').trim();
+
   try {
     return JSON.parse(trimmed);
   } catch {}
@@ -115,6 +118,7 @@ function extractJson(text) {
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
   }
+
   throw new Error('Model did not return valid JSON.');
 }
 
@@ -141,7 +145,9 @@ function sanitizePayload(payload) {
             title: String(item.title ?? ''),
             summary: String(item.summary ?? ''),
             impact: String(item.impact ?? 'Watch'),
-            importance: Number.isFinite(item.importance) ? item.importance : Number(item.importance ?? 3),
+            importance: Number.isFinite(item.importance)
+              ? item.importance
+              : Number(item.importance ?? 3),
             why_it_matters: String(item.why_it_matters ?? ''),
             sources: Array.isArray(item.sources)
               ? item.sources
@@ -158,19 +164,21 @@ function sanitizePayload(payload) {
 }
 
 async function main() {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('Missing OPENAI_API_KEY');
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('Missing GEMINI_API_KEY');
   }
 
   await fs.mkdir(DATA_DIR, { recursive: true });
 
-  const response = await client.responses.create({
-    model: process.env.OPENAI_MODEL || 'gpt-5',
-    tools: [{ type: 'web_search' }],
-    input: buildPrompt(),
+  const response = await ai.models.generateContent({
+    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    contents: buildPrompt(),
+    config: {
+      tools: [{ googleSearch: {} }],
+    },
   });
 
-  const payload = sanitizePayload(extractJson(response.output_text || ''));
+  const payload = sanitizePayload(extractJson(response.text || ''));
   const previousHistory = await readJson(HISTORY_PATH, []);
 
   const historyEntry = {
