@@ -36,76 +36,78 @@ function nowInETParts() {
 }
 
 function buildPrompt() {
-  const et = nowInETParts();
-  const etDate = `${et.year}-${et.month}-${et.day}`;
-  const etTime = `${et.hour}:${et.minute}:${et.second}`;
+  return `你而家要為一個公開網站製作金融新聞摘要。
 
-  return `You are preparing a public-facing financial news briefing website.
+目前美東時間日期：${etDate}
+目前美東時間：${etTime}
+目標讀者：想快速掌握市場重點的投資者與一般讀者。
 
-Current Eastern Time date: ${etDate}
-Current Eastern Time time: ${etTime}
-Audience: investors and general readers who want a concise, practical update.
+請使用 Google Search grounding 搜尋最新、最相關的資訊。
+只聚焦以下四類對市場有實質影響的最新新聞：
+1. 美股與美國經濟
+2. 環球經濟
+3. 香港經濟／香港市場
+4. 重大政策更新（尤其是會影響市場、企業、利率、貿易、監管的政策）
 
-Use Google Search grounding to find the most relevant recent developments.
-Focus ONLY on recent, material items that matter for:
-1. U.S. stock market and U.S. economy
-2. Global economy
-3. Hong Kong economy / Hong Kong market
-4. Major policy updates that could affect markets or business
+請直接輸出有效 JSON。
+不要輸出 markdown。
+不要輸出 code fence。
+不要輸出任何額外解釋。
+所有文字內容必須使用繁體中文。
+英文專有名詞、公司名、機構名、指數名可以保留英文原文，但整體說明、摘要、標題、原因分析必須用繁體中文。
 
-Return VALID JSON ONLY. No markdown. No code fences. No commentary.
-Use this exact schema:
+請嚴格使用以下 JSON schema：
 {
-  "generated_at_et": "ISO-like timestamp string in America/New_York context",
-  "headline": "one-sentence overview",
-  "summary": "120-220 word executive summary",
+  "generated_at_et": "America/New_York 時區概念下的時間字串",
+  "headline": "一句話總結今日重點",
+  "summary": "120至220字的繁體中文總結",
   "sections": [
     {
       "key": "us_markets",
-      "title": "U.S. Stocks & Economy",
+      "title": "美股與美國經濟",
       "items": [
         {
-          "title": "short headline",
-          "summary": "2-4 sentence explanation",
-          "impact": "Bullish|Bearish|Mixed|Watch",
+          "title": "短標題",
+          "summary": "2至4句繁體中文說明",
+          "impact": "利好|利淡|中性|觀察",
           "importance": 1,
-          "why_it_matters": "one sentence",
+          "why_it_matters": "一句繁體中文說明為何重要",
           "sources": [
-            { "title": "source title", "url": "https://..." }
+            { "title": "來源標題", "url": "https://..." }
           ]
         }
       ]
     },
     {
       "key": "global_economy",
-      "title": "Global Economy",
+      "title": "環球經濟",
       "items": []
     },
     {
       "key": "hong_kong",
-      "title": "Hong Kong Economy",
+      "title": "香港經濟",
       "items": []
     },
     {
       "key": "policy",
-      "title": "Major Policy Updates",
+      "title": "重大政策更新",
       "items": []
     }
   ]
 }
 
-Rules:
-- Provide 2-4 items per section when relevant.
-- Prefer high-quality sources such as central banks, government releases, major exchanges, and major financial news outlets.
-- Every item must include at least 2 sources whenever possible.
-- Avoid duplicate stories across sections.
-- Keep it balanced and factual.
-- Importance must be an integer from 1 to 5.
-- If a section is quiet, include fewer items instead of filler.
-- Mention exact dates when timing matters.
-- Make sure links are direct and valid.
-- Return strict JSON only.
-- Escape all quotation marks, newlines, and control characters correctly inside JSON strings.`;
+規則：
+- 每個 section 視乎情況提供 2 至 4 則重點新聞。
+- 如果某個 section 今日冇太多重要資訊，可以少寫，不要為了湊數亂寫。
+- 優先使用高質來源，例如政府公告、央行、交易所、國際金融媒體、主流新聞機構。
+- 每則 item 盡量提供至少 2 個 sources。
+- 避免不同 section 重覆同一新聞。
+- 內容要平衡、客觀、實用。
+- importance 必須是 1 至 5 的整數。
+- 如時間對理解新聞重要，請寫清楚日期。
+- 連結必須直接有效。
+- 必須只輸出嚴格 JSON。
+- JSON 字串內要正確處理引號、換行與控制字元。`;
 }
 
 function fixJsonString(str) {
