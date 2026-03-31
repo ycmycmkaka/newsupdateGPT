@@ -108,6 +108,70 @@ Rules:
 - Escape all quotation marks, newlines, and control characters correctly inside JSON strings.`;
 }
 
+function fixJsonString(str) {
+  let result = '';
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < str.length; i += 1) {
+    const ch = str[i];
+
+    if (inString) {
+      if (escape) {
+        result += ch;
+        escape = false;
+        continue;
+      }
+
+      if (ch === '\\') {
+        result += ch;
+        escape = true;
+        continue;
+      }
+
+      if (ch === '"') {
+        result += ch;
+        inString = false;
+        continue;
+      }
+
+      if (ch === '\n') {
+        result += '\\n';
+        continue;
+      }
+
+      if (ch === '\r') {
+        result += '\\r';
+        continue;
+      }
+
+      if (ch === '\t') {
+        result += '\\t';
+        continue;
+      }
+
+      const code = ch.charCodeAt(0);
+      if (code >= 0 && code <= 0x1f) {
+        result += ' ';
+        continue;
+      }
+
+      result += ch;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      result += ch;
+      continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
+}
+
 function extractJson(text) {
   const raw = String(text || '').trim();
 
@@ -121,22 +185,19 @@ function extractJson(text) {
     .replace(/\s*```$/, '')
     .trim();
 
-  try {
-    return JSON.parse(cleaned);
-  } catch {}
-
   const firstBrace = cleaned.indexOf('{');
   const lastBrace = cleaned.lastIndexOf('}');
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     cleaned = cleaned.slice(firstBrace, lastBrace + 1);
   }
 
+  cleaned = fixJsonString(cleaned);
   cleaned = cleaned.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ');
 
   try {
     return JSON.parse(cleaned);
   } catch (error) {
-    console.error('Failed JSON preview:', cleaned.slice(0, 2000));
+    console.error('Failed JSON preview:', cleaned.slice(0, 3000));
     throw error;
   }
 }
@@ -202,7 +263,6 @@ async function main() {
       contents: buildPrompt(),
       config: {
         tools: [{ googleSearch: {} }],
-        responseMimeType: 'application/json',
       },
     }),
     new Promise((_, reject) =>
