@@ -36,6 +36,10 @@ function nowInETParts() {
 }
 
 function buildPrompt() {
+  const et = nowInETParts();
+  const etDate = `${et.year}-${et.month}-${et.day}`;
+  const etTime = `${et.hour}:${et.minute}:${et.second}`;
+
   return `你而家要為一個公開網站製作金融新聞摘要。
 
 目前美東時間日期：${etDate}
@@ -218,7 +222,7 @@ function sanitizePayload(payload) {
 
   return {
     generated_at_et: payload.generated_at_et ?? new Date().toISOString(),
-    headline: String(payload.headline ?? 'Market briefing update'),
+    headline: String(payload.headline ?? '市場新聞更新'),
     summary: String(payload.summary ?? ''),
     sections: sections.map((section) => ({
       key: String(section.key ?? ''),
@@ -227,7 +231,7 @@ function sanitizePayload(payload) {
         ? section.items.map((item) => ({
             title: String(item.title ?? ''),
             summary: String(item.summary ?? ''),
-            impact: String(item.impact ?? 'Watch'),
+            impact: String(item.impact ?? '觀察'),
             importance: Number.isFinite(item.importance)
               ? item.importance
               : Number(item.importance ?? 3),
@@ -276,9 +280,7 @@ async function main() {
 
   const responseText =
     response?.text ||
-    response?.candidates?.[0]?.content?.parts
-      ?.map((part) => part?.text || '')
-      .join('') ||
+    response?.candidates?.[0]?.content?.parts?.map((part) => part?.text || '').join('') ||
     '';
 
   const payload = sanitizePayload(extractJson(responseText));
